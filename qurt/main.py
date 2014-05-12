@@ -3,11 +3,16 @@ import tempfile
 import subprocess
 from sys import argv, exit
 import os
+from os import path
 import shutil
 import logging
+from time import time
 
 import pygit2 as git
 import xattr
+
+ANNOTATIONS_FILE = '.annotate'
+ANNOTATIONS_REF 'refs/notes/commits'
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -34,44 +39,67 @@ def main():
     # create a temp directory
 
     target_directory = tempfile.mkdtemp()
-    log.info('Working in temp directory: {}'.format(target_directory))
 
     # check out project in temp directory
 
-    log.info('Cloning repository')
+    log.info('Cloning repository to: {}'.format(target_directory))
     git.clone_repository(repo.workdir, target_directory)
     log.info('Done.')
 
     # run process (from command-line args)
 
-    log.info('Running command')
-    process = subprocess.Popen(command, cwd=target_directory)
+    relpath = path.relpath('.', repo.workdir)
+    working_directory = path.join(target_directory, relpath)
+
+    start_time = time()
+    log.info('Running command in {}'.format(working_directory))
+    process = subprocess.Popen(command, cwd=working_directory)
     result = process.wait()
-    log.info('Done.')
+    elapsed_time = time() - start_time
+    log.info('Finished in {} seconds'.format(elapsed_time))
 
     # check process status
 
+    log.info('Process exited with status {}'.format(result))
+
     # move output files?
 
+    '''
     repo = git.Repository(target_directory)
     for fname in repo.status():
-        dirpath = os.path.dirname(fname)
+        dirpath = path.dirname(fname)
         try:
             os.makedirs(dirpath)
         except (OSError, IOError):
             pass
         log.info('Moving output file: {}'.format(fname))
-        shutil.move(os.path.join(target_directory, fname), fname)
+        shutil.move(path.join(target_directory, fname), fname)
 
         attrs = xattr.xattr(fname)
         attrs['created.commit'] = commit
+    '''
+
+
+    # annotate commit
+    
+    annotations = 'command\t{}\n'.format(' '.join(command))
+    annotations += 'working_directory\t{}\n'.format(relpath)
+    annotations += 'elapsed_time\t{}\n'.format(elapsed_time)
+
+    try:
+        fname = path.join(working_directory, ANNOTATIONS_FILE)
+        print fname
+        with open(fname) as ff:
+            annotations += ff.read()
+    except IOError:
+        pass
+
+    repo.create_note(annotations, repo.default_signature, repo.default_signature, repo.head.target.hex, ANNOTATIONS_REF, True)
+
+    # delete temp directory
 
     log.info('Deleting temp directory')
     shutil.rmtree(target_directory)
-
-    # annotate commit?
-    
-
 
 
 if __name__ == '__main__':
