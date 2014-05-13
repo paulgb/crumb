@@ -10,6 +10,7 @@ from time import time
 import argparse
 from contextlib import contextmanager
 import csv
+from datetime import datetime
 
 import pygit2 as git
 import xattr
@@ -150,11 +151,14 @@ class Qurt(object):
 
     def export(self, out_file):
         # compile annotations data
-        fields = OrderedSet(['commit', 'working_directory', 'command', 'elapsed_time'])
+        fields = OrderedSet(['commit_time', 'commit', 'working_directory', 'command', 'elapsed_time'])
         annotations_list = list()
         for note in self.repo.notes():
+            ts = self.repo.revparse_single(note.annotated_id).commit_time
+            commit_time = datetime.fromtimestamp(ts)
             annotations = dict(
-                commit = note.annotated_id
+                commit = note.annotated_id,
+                commit_time = str(commit_time)
             )
             for line in note.message.split('\n'):
                 try:
@@ -164,6 +168,7 @@ class Qurt(object):
                 annotations[k] = v
             fields.update(annotations)
             annotations_list.append(annotations)
+        annotations_list.sort(key = lambda x: x['commit_time'], reverse=True)
 
         # export to csv file
         with open(out_file, 'w') as output:
@@ -187,6 +192,7 @@ def main():
     try:
         if args.init:
             # placeholder; nothing to initialize yet
+            pass
         elif args.export:
             controller.export(args.export)
         elif args.run:
