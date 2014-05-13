@@ -12,7 +12,8 @@ import pygit2 as git
 import xattr
 
 ANNOTATIONS_FILE = '.annotate'
-ANNOTATIONS_REF 'refs/notes/commits'
+ANNOTATIONS_REF = 'refs/notes/commits'
+OUTPUT_DESTINATION = 'output'
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -62,24 +63,6 @@ def main():
 
     log.info('Process exited with status {}'.format(result))
 
-    # move output files?
-
-    '''
-    repo = git.Repository(target_directory)
-    for fname in repo.status():
-        dirpath = path.dirname(fname)
-        try:
-            os.makedirs(dirpath)
-        except (OSError, IOError):
-            pass
-        log.info('Moving output file: {}'.format(fname))
-        shutil.move(path.join(target_directory, fname), fname)
-
-        attrs = xattr.xattr(fname)
-        attrs['created.commit'] = commit
-    '''
-
-
     # annotate commit
     
     annotations = 'command\t{}\n'.format(' '.join(command))
@@ -95,6 +78,23 @@ def main():
         pass
 
     repo.create_note(annotations, repo.default_signature, repo.default_signature, repo.head.target.hex, ANNOTATIONS_REF, True)
+
+    # move output files
+
+    output_repo = git.Repository(target_directory)
+    output_tag = '{:.0f}-{}'.format(start_time, commit)
+    for fname in output_repo.status():
+        source_path = path.join(target_directory, fname)
+        fpath = path.join(OUTPUT_DESTINATION, output_tag, fname)
+        try:
+            os.makedirs(path.dirname(fpath))
+        except (OSError, IOError):
+            pass
+        log.info('Moving output file: {} to {}'.format(source_path, fpath))
+        shutil.move(source_path, fpath)
+
+        attrs = xattr.xattr(fpath)
+        attrs['created.commit'] = commit
 
     # delete temp directory
 
