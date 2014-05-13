@@ -77,6 +77,9 @@ def main():
     except IOError:
         pass
 
+    for line in annotations.split('\n'):
+        log.info(line)
+
     repo.create_note(annotations, repo.default_signature, repo.default_signature, repo.head.target.hex, ANNOTATIONS_REF, True)
 
     # move output files
