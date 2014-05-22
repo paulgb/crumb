@@ -151,14 +151,15 @@ class Qurt(object):
 
     def export(self, out_file):
         # compile annotations data
-        fields = OrderedSet(['commit_time', 'commit', 'working_directory', 'command', 'elapsed_time'])
+        fields = OrderedSet(['commit_time', 'commit', 'commit_message', 'working_directory', 'command', 'elapsed_time'])
         annotations_list = list()
         for note in self.repo.notes():
-            ts = self.repo.revparse_single(note.annotated_id).commit_time
-            commit_time = datetime.fromtimestamp(ts)
+            commit = self.repo.revparse_single(note.annotated_id)
+            commit_time = datetime.fromtimestamp(commit.commit_time)
             annotations = dict(
                 commit = note.annotated_id,
-                commit_time = str(commit_time)
+                commit_time = str(commit_time),
+                commit_message = commit.message.strip()
             )
             for line in note.message.split('\n'):
                 try:
