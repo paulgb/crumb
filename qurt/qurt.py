@@ -12,7 +12,7 @@ import xattr
 
 from tempdir import TemporaryDirectory
 from orderedset import OrderedSet
-from annotations import parse_output_annotations
+from annotations import parse_output_annotations, annotations_to_string
 
 ANNOTATIONS_REF = 'refs/notes/commits'
 OUTPUT_DESTINATION = 'output'
@@ -62,6 +62,7 @@ class Qurt(object):
 
             # run process
             start_time = time()
+            start_dt = datetime.now()
             self.log.info('Running command in {}'.format(working_directory))
             process = subprocess.Popen(command.split(), cwd=working_directory, stdout=subprocess.PIPE)
 
@@ -76,17 +77,20 @@ class Qurt(object):
             result = process.wait()
             elapsed_time = time() - start_time
 
-            annotations['command'] = command
-            annotations['working_directory'] = relpath
+            #annotations['command'] = command
+            #annotations['working_directory'] = relpath
             annotations['elapsed_time'] = elapsed_time
 
             self.log.info('Finished in {} seconds'.format(elapsed_time))
-            print annotations
 
             # check process status
             self.log.info('Process exited with status {}'.format(result))
+            annotations_txt = annotations_to_string(annotations, start_dt, command, relpath)
 
-            self.repo.create_note(annotations,
+            print annotations_txt
+            #previous_value = self.repo.lookup_note(self.commit)
+            
+            self.repo.create_note(annotations_txt,
                     self.repo.default_signature,
                     self.repo.default_signature,
                     self.commit,
