@@ -1,6 +1,7 @@
 
 import logging
 import argparse
+import sys
 
 from qurt import Qurt
 
@@ -15,7 +16,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--init', '-i', action='store_true')
-    parser.add_argument('--export', '-e')
+    parser.add_argument('--export', '-e', nargs='?', default=False)
     parser.add_argument('--run', '-r')
     args = parser.parse_args()
 
@@ -25,8 +26,12 @@ def main():
         if args.init:
             # placeholder; nothing to initialize yet
             pass
-        elif args.export:
-            controller.export(args.export)
+        elif args.export is not False:
+            if args.export is None:
+                controller.export(sys.stdout)
+            else:
+                with open(args.export, 'w') as output:
+                    controller.export(output)
         elif args.run:
             controller.run(args.run)
         else:

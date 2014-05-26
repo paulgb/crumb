@@ -12,7 +12,7 @@ import xattr
 
 from tempdir import TemporaryDirectory
 from orderedset import OrderedSet
-from annotations import parse_output_annotations, annotations_to_string
+from annotations import parse_output_annotations, annotations_to_string, string_to_annotations
 
 ANNOTATIONS_REF = 'refs/notes/commits'
 OUTPUT_DESTINATION = 'output'
@@ -77,15 +77,16 @@ class Qurt(object):
             result = process.wait()
             elapsed_time = time() - start_time
 
-            #annotations['command'] = command
-            #annotations['working_directory'] = relpath
+            annotations['command'] = command
+            annotations['working_directory'] = relpath
+            annotations['start_time'] = start_dt
             annotations['elapsed_time'] = elapsed_time
 
             self.log.info('Finished in {} seconds'.format(elapsed_time))
 
             # check process status
             self.log.info('Process exited with status {}'.format(result))
-            annotations_txt = annotations_to_string(annotations, start_dt, command, relpath)
+            annotations_txt = annotations_to_string(annotations)
 
             print annotations_txt
             #previous_value = self.repo.lookup_note(self.commit)
@@ -119,30 +120,32 @@ class Qurt(object):
 
     def export(self, out_file):
         # compile annotations data
-        fields = OrderedSet(['commit_time', 'commit', 'commit_message', 'working_directory', 'command', 'elapsed_time'])
+        fields = OrderedSet([
+            'start_time',
+            'commit_time',
+            'commit',
+            'commit_message',
+            'working_directory',
+            'command',
+            'elapsed_time'])
         annotations_list = list()
         for note in self.repo.notes():
             commit = self.repo.revparse_single(note.annotated_id)
             commit_time = datetime.fromtimestamp(commit.commit_time)
-            annotations = dict(
-                commit = note.annotated_id,
-                commit_time = str(commit_time),
-                commit_message = commit.message.strip()
-            )
-            for line in note.message.split('\n'):
-                try:
-                    k, v = line.split('\t', 1)
-                except:
-                    continue
-                annotations[k] = v
-            fields.update(annotations)
-            annotations_list.append(annotations)
-        annotations_list.sort(key = lambda x: x['commit_time'], reverse=True)
+
+            for annotation in string_to_annotations(note.message):
+                annotation['commit'] = note.annotated_id
+                annotation['commit_time'] = str(commit_time)
+                annotation['commit_message'] = commit.message.strip()
+
+                fields.update(annotation)
+                annotations_list.append(annotation)
+
+        annotations_list.sort(key = lambda x: x['start_time'], reverse=True)
 
         # export to csv file
-        with open(out_file, 'w') as output:
-            writer = csv.DictWriter(output, fields)
-            writer.writeheader()
-            for annotation in annotations_list:
-                writer.writerow(annotation)
+        writer = csv.DictWriter(out_file, fields)
+        writer.writeheader()
+        for annotation in annotations_list:
+            writer.writerow(annotation)
 
