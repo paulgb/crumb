@@ -17,7 +17,7 @@ from annotations import parse_output_annotations, annotations_to_string, string_
 ANNOTATIONS_REF = 'refs/notes/commits'
 OUTPUT_DESTINATION = 'output'
 
-class Qurt(object):
+class Crumb(object):
     _repo = None
     _commit = None
 
@@ -128,6 +128,7 @@ class Qurt(object):
             'working_directory',
             'command',
             'elapsed_time'])
+
         annotations_list = list()
         for note in self.repo.notes():
             commit = self.repo.revparse_single(note.annotated_id)

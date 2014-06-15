@@ -3,7 +3,7 @@ import logging
 import argparse
 import sys
 
-from qurt import Qurt
+from crumb import Crumb
 
 
 class NotInRepoError(Exception):
@@ -20,7 +20,7 @@ def main():
     parser.add_argument('--run', '-r')
     args = parser.parse_args()
 
-    controller = Qurt()
+    controller = Crumb()
     
     try:
         if args.init:

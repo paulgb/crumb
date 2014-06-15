@@ -24,6 +24,7 @@ DATE_FORMAT = '%Y%m%d.%H%M'
 ANNOTATIONS_HEADER = re.compile(r'(\d+\.\d+):(?: \[([^\]]+)\])? (.+)')
 ANNOTATIONS_KV = re.compile('\t(.+)\t(.+)')
 
+
 def parse_output_annotations(text):
     match = ANNOTATIONS_REGEX.match(text)
     if match:
@@ -31,7 +32,7 @@ def parse_output_annotations(text):
     raise ValueError()
 
 
-def annotations_to_string(annotations):#, dt, command, relpath):
+def annotations_to_string(annotations):
     result_buffer = StringIO()
     annotations = dict(annotations)
     relpath = annotations.pop('working_directory')
@@ -77,14 +78,4 @@ def string_to_annotations(string_annotations):
 
     if annotations:
         yield annotations
-        
-
-
-    annotations = dict()
-    try:
-        pass
-    except StopIteration:
-        pass
-
-
 
