@@ -17,6 +17,11 @@ from annotations import parse_output_annotations, annotations_to_string, string_
 ANNOTATIONS_REF = 'refs/notes/commits'
 OUTPUT_DESTINATION = 'output'
 
+class NotInRepoError(Exception):
+    def __str__(self):
+        return 'Not a git repo'
+
+
 class Crumb(object):
     _repo = None
     _commit = None

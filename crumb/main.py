@@ -3,12 +3,7 @@ import logging
 import argparse
 import sys
 
-from crumb import Crumb
-
-
-class NotInRepoError(Exception):
-    def __str__(self):
-        return 'Not a git repo'
+from crumb import Crumb, NotInRepoError
 
 
 def main():
@@ -20,7 +15,7 @@ def main():
     parser.add_argument('--run', '-r')
     args = parser.parse_args()
 
-    controller = Crumb()
+    crumb = Crumb()
     
     try:
         if args.init:
@@ -28,17 +23,17 @@ def main():
             pass
         elif args.export is not False:
             if args.export is None:
-                controller.export(sys.stdout)
+                crumb.export(sys.stdout)
             else:
                 with open(args.export, 'w') as output:
-                    controller.export(output)
+                    crumb.export(output)
         elif args.run:
-            controller.run(args.run)
+            crumb.run(args.run)
         else:
             parser.print_help()
 
     except NotInRepoError:
-        controller.log.error('Error: must be run inside a git repository')
+        crumb.log.error('Error: must be run inside a git repository')
 
 
 if __name__ == '__main__':
