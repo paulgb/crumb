@@ -1,157 +1,39 @@
 
-import logging
-import subprocess
-from sys import argv, exit
-import os, os.path as path
-from time import time
-import csv
-from datetime import datetime
+#import logging
+#from sys import argv, exit
+#import os, os.path as path
+#from time import time
+import os.path as path
 
-import pygit2 as git
-import xattr
+#import xattr
 
-from tempdir import TemporaryDirectory
+from cloner import repo_clone
 from orderedset import OrderedSet
 from annotations import parse_output_annotations, annotations_to_string, string_to_annotations
-
-ANNOTATIONS_REF = 'refs/notes/commits'
-OUTPUT_DESTINATION = 'output'
-
-class NotInRepoError(Exception):
-    def __str__(self):
-        return 'Not a git repo'
+from repo import GitRepo, NotInRepoError
+from config import Configuration
+from runner import Runner
 
 
 class Crumb(object):
-    _repo = None
-    _commit = None
-
     def __init__(self):
-        self.log = logging.getLogger(__name__)
+        #self.log = logging.getLogger(__name__)
 
-
-    @property
-    def repo(self):
-        if not self._repo:
-            try:
-                repo_dir = git.discover_repository('.')
-            except KeyError:
-                raise NotInRepoError()
-            self._repo = git.Repository(repo_dir)
-        return self._repo
-
-
-    @property
-    def commit(self):
-        if not self._commit:
-            self._commit = self.repo.head.target.hex
-        return self._commit
+        self.repo = GitRepo()
+        self.config = Configuration(self.repo)
 
 
     def run(self, command):
-        # todo: warn if files need to be checked in
-        with TemporaryDirectory() as clone_dir:
-            self.log.info('Found git repo in {}'.format(self.repo.workdir))
-            self.log.info('Last commit: {} ({})'.format(self.commit, self.repo.head.log().next().message))
-            # clone repo
-            self.log.info('Cloning repository to: {}'.format(clone_dir))
-            git.clone_repository(self.repo.workdir, clone_dir)
-            self.log.info('Done.')
+        runner = Runner(self.config)
 
-            # check out project in temp directory
-            relpath = path.relpath('.', self.repo.workdir)
-            working_directory = path.join(clone_dir, relpath)
+        relpath = path.relpath('.', self.repo.basedir)
 
-            # annotations
-            annotations = dict()
-
-            # run process
-            start_time = time()
-            start_dt = datetime.now()
-            self.log.info('Running command in {}'.format(working_directory))
-            process = subprocess.Popen(command.split(), cwd=working_directory, stdout=subprocess.PIPE)
-
-            for line in process.stdout:
-                print line.rstrip()
-                try:
-                    key, value = parse_output_annotations(line)
-                    annotations[key] = value
-                except ValueError:
-                    pass
-
-            result = process.wait()
-            elapsed_time = time() - start_time
-
-            annotations['command'] = command
-            annotations['working_directory'] = relpath
-            annotations['start_time'] = start_dt
-            annotations['elapsed_time'] = elapsed_time
-
-            self.log.info('Finished in {} seconds'.format(elapsed_time))
-
-            # check process status
-            self.log.info('Process exited with status {}'.format(result))
-            annotations_txt = annotations_to_string(annotations)
-
-            print annotations_txt
-            #previous_value = self.repo.lookup_note(self.commit)
-            
-            self.repo.create_note(annotations_txt,
-                    self.repo.default_signature,
-                    self.repo.default_signature,
-                    self.commit,
-                    ANNOTATIONS_REF,
-                    True) # overwrite
-
-            #self.move_output_files(clone_dir, start_time, self.commit)
-
-
-    def move_output_files(self, clone_dir, start_time, commit):
-        output_repo = git.Repository(clone_dir)
-        output_tag = '{:.0f}-{}'.format(start_time, commit)
-        for fname in output_repo.status():
-            source_path = path.join(clone_dir, fname)
-            fpath = path.join(OUTPUT_DESTINATION, output_tag, fname)
-            try:
-                os.makedirs(path.dirname(fpath))
-            except (OSError, IOError):
-                pass
-            self.log.info('Moving output file: {}'.format(fname))
-            shutil.move(source_path, fpath)
-
-            attrs = xattr.xattr(fpath)
-            attrs['created.commit'] = commit
+        with repo_clone(self.repo, self.config) as clone_dir:
+            annotations = runner.run(clone_dir, relpath, command)
+            self.repo.annotate(annotations)
 
 
     def export(self, out_file):
-        # compile annotations data
-        fields = OrderedSet([
-            'start_time',
-            'commit_time',
-            'commit',
-            'commit_message',
-            'working_directory',
-            'command',
-            'elapsed_time'])
-
-        annotations_list = list()
-        for note in self.repo.notes():
-            commit = self.repo.revparse_single(note.annotated_id)
-            commit_time = datetime.fromtimestamp(commit.commit_time)
-
-            for annotation in string_to_annotations(note.message):
-                annotation['commit'] = note.annotated_id
-                annotation['commit_time'] = str(commit_time)
-                annotation['commit_message'] = commit.message.strip()
-
-                fields.update(annotation)
-                annotations_list.append(annotation)
-
-        annotations_list.sort(key = lambda x: x['start_time'], reverse=True)
-
-        # export to csv file
-        writer = csv.DictWriter(out_file, fields)
-        writer.writeheader()
-        for annotation in annotations_list:
-            writer.writerow(annotation)
+        exporter = CSVExporter()
+        exporter.export(out_file)
 
