@@ -1,6 +1,7 @@
 
 import pygit2 as git
 from annotations import annotations_to_string, string_to_annotations
+from datetime import datetime
 
 ANNOTATIONS_REF = 'refs/notes/commits'
 

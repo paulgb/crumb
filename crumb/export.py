@@ -1,5 +1,6 @@
 
 import csv
+from orderedset import OrderedSet
 
 class Exporter(object):
     def __init__(self, repo, config):
@@ -23,14 +24,15 @@ class Exporter(object):
             annotations_list.append(annotation)
 
         annotations_list.sort(key = lambda x: x['start_time'], reverse=True)
-        return annotations_list
+        return fields, annotations_list
 
 
-class CSVExporter(object):
+class CSVExporter(Exporter):
     def export(self, out_file):
         # export to csv file
+        fields, annotations = self.prepare_annotations()
         writer = csv.DictWriter(out_file, fields)
         writer.writeheader()
-        for annotation in self.prepare_annotations():
+        for annotation in annotations:
             writer.writerow(annotation)
 

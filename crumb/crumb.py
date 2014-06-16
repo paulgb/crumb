@@ -8,11 +8,11 @@ import os.path as path
 #import xattr
 
 from cloner import repo_clone
-from orderedset import OrderedSet
 from annotations import parse_output_annotations, annotations_to_string, string_to_annotations
 from repo import GitRepo, NotInRepoError
 from config import Configuration
 from runner import Runner
+from export import CSVExporter
 
 
 class Crumb(object):
@@ -34,6 +34,6 @@ class Crumb(object):
 
 
     def export(self, out_file):
-        exporter = CSVExporter()
+        exporter = CSVExporter(self.repo, self.config)
         exporter.export(out_file)
 
