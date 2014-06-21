@@ -9,6 +9,7 @@ is measured against some metric of success. For example, a spell-checker is meas
 dataset, while a machine learning algorithm might be measured by its cross-validation score on a training set.
 
 A typical approach to this sort of task is:
+
 1. write the code to evaluate the results
 2. write a benchmark using the simplest possible algorithm
 3. progressively increase the evaluation score by improving/replacing
@@ -26,6 +27,7 @@ but it is still a pain to manually track the attributes associated with each com
 The goal of Crumb is to automate the tracking and in a way that does not get in your way as a developer.
 
 Crumb's functionality boils down to this:
+
 - clone your git repository into a temporary directory
 - run a given command in that directory
 - parse the output of the command for tracked attributes
