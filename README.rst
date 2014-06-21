@@ -5,8 +5,8 @@ Introduction
 ------------
 
 In software development, some projects involve writing programs that are not merely "correct" or "incorrect" but
-is measured against some metric of success. For example, a spell-checker is measured by accuracy against a test
-dataset, while a machine learning algorithm might be measured by its cross-validation score on a training set.
+instead is measured against some metric of success. For example, a spell-checker is measured by accuracy against a test
+dataset, and a machine learning algorithm might be measured by its cross-validation score on a training set.
 
 A typical approach to this sort of task is:
 
@@ -16,15 +16,15 @@ A typical approach to this sort of task is:
    the algorithm until you've reached the objective or no further
    gains can be made.
 
-As far as I know this methodology has no name, but it might as well be called objective-driven development in
-analogy to its deterministic cousin, test-driven development.
+As far as I know this methodology has no name, but it could be called "objective-driven development" in
+analogy to its deterministic cousin, "test-driven development".
 
 The downside to this approach is that it requires keeping track of the evaluation score (and possibly other
 attributes such as parameters) at each change of the algorithm. Fear of not being able to revert and recreate
-good results can creep in and impede experimentation. To be sure, version-control alleviates this to a point,
+good results can creep in and impede experimentation. Version-control alleviates this to a point,
 but it is still a pain to manually track the attributes associated with each commit.
 
-The goal of Crumb is to automate the tracking and in a way that does not get in your way as a developer.
+That's where Crumb comes in. Crumb exists to automate the tracking, in a way that does not get in your way as a developer.
 
 Crumb's functionality boils down to this:
 
@@ -36,4 +36,6 @@ Crumb's functionality boils down to this:
 - export the commit history (along with the attributes) to
   a spreadsheet for analysis and easy viewing
 
+This results in a "breadcrumb trail" (hence the name) of commits and their scores. In cloning your commit to a temporary
+directory, Crumb provides a degree of security in ensuring that the results will be reproducable at another time.
 
